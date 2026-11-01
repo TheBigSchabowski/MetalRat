@@ -29,6 +29,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -43,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +78,11 @@ interface Platform {
     fun exportJson(json: String, fileName: String)
     /** Lets the user pick a file and hands its text to [onText]. */
     fun importJson(onText: (String) -> Unit)
+    /**
+     * Starts a Wassertiger practice timer of [minutes] in the background and opens [url].
+     * Returns a message for the user when something didn't work (e.g. Wassertiger missing).
+     */
+    fun practice(url: String?, title: String, minutes: Int): String?
 }
 
 private val Accent = Color(0xFFE08A3C)
@@ -105,18 +113,38 @@ fun BookmarkScreen(
     thumbs: ThumbnailCache,
     platform: Platform,
     header: @Composable () -> Unit = {},
+    /** Bookmark id to practice right away (tap on a "due" reminder). */
+    requestedPractice: String? = null,
+    onPracticeRequestHandled: () -> Unit = {},
 ) {
     val items by store.items.collectAsState()
     var query by remember { mutableStateOf("") }
+    var practiceTab by remember { mutableStateOf(false) }
+    var practicing by remember { mutableStateOf<Bookmark?>(null) }
+    // Re-evaluates "fällig" labels every minute.
+    val now by produceState(System.currentTimeMillis()) {
+        while (true) {
+            kotlinx.coroutines.delay(30_000)
+            value = System.currentTimeMillis()
+        }
+    }
+    LaunchedEffect(requestedPractice, items) {
+        if (requestedPractice != null) {
+            store.get(requestedPractice)?.let { practicing = it; practiceTab = true }
+            onPracticeRequestHandled()
+        }
+    }
     var editing by remember { mutableStateOf<Bookmark?>(null) }
     var creating by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val shown = remember(items, query) {
+    val dueCount = items.count { b -> b.practice?.let { SpacedRepetition.isDue(it, now) } == true }
+    val shown = remember(items, query, practiceTab) {
         val q = query.trim()
-        if (q.isEmpty()) items
-        else items.filter { b ->
+        val base = if (practiceTab) items.filter { it.practice != null }.sortedBy { it.practice!!.due } else items
+        if (q.isEmpty()) base
+        else base.filter { b ->
             listOf(b.title, b.url, b.selectedText, b.note, b.author, b.source).any { it?.contains(q, ignoreCase = true) == true }
         }
     }
@@ -157,9 +185,21 @@ fun BookmarkScreen(
                 }
             }
             header()
+            Row(Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Tab("Alle", selected = !practiceTab) { practiceTab = false }
+                Tab(if (dueCount > 0) "Üben · $dueCount fällig" else "Üben", selected = practiceTab, highlight = dueCount > 0) {
+                    practiceTab = true
+                }
+            }
             if (shown.isEmpty()) {
                 Text(
-                    if (items.isEmpty()) platform.emptyHint else "Nichts gefunden.",
+                    when {
+                        practiceTab && query.isBlank() -> "Noch nichts zum Üben. Tippe bei einem Video auf „Üben“: " +
+                            "Wassertiger startet im Hintergrund einen Timer, das Video öffnet sich an der gemerkten Stelle, " +
+                            "und MetalRat erinnert dich danach nach 45 min, 2 h, 1 Tag, 3 Tagen, 1 Woche, 2 Wochen, 1 Monat."
+                        items.isEmpty() -> platform.emptyHint
+                        else -> "Nichts gefunden."
+                    },
                     color = Muted,
                     modifier = Modifier.padding(24.dp).widthIn(max = 560.dp),
                 )
@@ -173,8 +213,10 @@ fun BookmarkScreen(
                 ) {
                     items(shown, key = { it.id }) { b ->
                         BookmarkCard(
-                            b, thumbs,
+                            b, thumbs, now,
                             onOpen = { Links.openUrl(b)?.let(platform::open) },
+                            onPractice = { practicing = b },
+                            onStopPractice = { store.update(b.id) { it.copy(practice = null) } },
                             onEdit = { editing = b },
                             onCopy = { Links.openUrl(b)?.let(platform::copy) },
                             onDelete = {
@@ -192,6 +234,15 @@ fun BookmarkScreen(
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(16.dp))
     }
 
+    practicing?.let { b ->
+        PracticeDialog(b, preselected = SpacedRepetition.lastMinutes(items), onDismiss = { practicing = null }) { minutes ->
+            practicing = null
+            val current = store.get(b.id) ?: b
+            store.update(b.id) { it.copy(practice = SpacedRepetition.practiced(it.practice, minutes, System.currentTimeMillis())) }
+            platform.practice(Links.openUrl(current), SpacedRepetition.timerTitle(current), minutes)
+                ?.let { message -> scope.launch { snackbar.showSnackbar(message) } }
+        }
+    }
     editing?.let { b ->
         EditDialog(b, isNew = false, onDismiss = { editing = null }) { changed ->
             editing = null
@@ -221,7 +272,10 @@ private val dateFormat = SimpleDateFormat("d. MMM yyyy, HH:mm", Locale.GERMAN)
 private fun BookmarkCard(
     b: Bookmark,
     thumbs: ThumbnailCache,
+    now: Long,
     onOpen: () -> Unit,
+    onPractice: () -> Unit,
+    onStopPractice: () -> Unit,
     onEdit: () -> Unit,
     onCopy: () -> Unit,
     onDelete: () -> Unit,
@@ -294,6 +348,16 @@ private fun BookmarkCard(
             b.note?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp, end = 8.dp))
             }
+            b.practice?.let { p ->
+                val due = SpacedRepetition.isDue(p, now)
+                Text(
+                    "Geübt ${p.count}× · " + if (due) "jetzt fällig" else "wieder ${SpacedRepetition.dueLabel(p, now)}",
+                    color = if (due) Accent else Muted,
+                    fontWeight = if (due) FontWeight.Bold else FontWeight.Normal,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val origin = listOfNotNull(
                     b.author,
@@ -303,10 +367,14 @@ private fun BookmarkCard(
                 ).distinct().joinToString(" · ")
                 Text(origin, color = Muted, style = MaterialTheme.typography.labelSmall, maxLines = 2,
                     overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                if (link != null) TextButton(onClick = onPractice) { Text("▶ Üben", color = Accent) }
                 Box {
                     TextButton(onClick = { menuOpen = true }) { Text("⋮", color = Muted) }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(text = { Text("Bearbeiten") }, onClick = { menuOpen = false; onEdit() })
+                        if (b.practice != null) {
+                            DropdownMenuItem(text = { Text("Nicht mehr üben") }, onClick = { menuOpen = false; onStopPractice() })
+                        }
                         if (link != null) DropdownMenuItem(text = { Text("Link kopieren") }, onClick = { menuOpen = false; onCopy() })
                         DropdownMenuItem(text = { Text("Löschen") }, onClick = { menuOpen = false; onDelete() })
                     }
@@ -369,6 +437,56 @@ private fun EditDialog(b: Bookmark, isNew: Boolean, onDismiss: () -> Unit, onSav
                 )
             }) { Text("Speichern") }
         },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
+    )
+}
+
+@Composable
+private fun Tab(label: String, selected: Boolean, highlight: Boolean = false, onClick: () -> Unit) {
+    TextButton(onClick = onClick) {
+        Text(
+            label,
+            color = when {
+                selected -> Accent
+                highlight -> Color(0xFFFFC08A)
+                else -> Muted
+            },
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+        )
+    }
+}
+
+/** Picks how long to practice; one tap on a duration starts. The last choice is highlighted. */
+@Composable
+private fun PracticeDialog(b: Bookmark, preselected: Int, onDismiss: () -> Unit, onStart: (Int) -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Wie lange üben?") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(b.title ?: b.url?.let(Links::displayLink).orEmpty(), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.SemiBold)
+                SpacedRepetition.DURATIONS.chunked(3).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        row.forEach { minutes ->
+                            val label = if (minutes < 60) "$minutes min" else "${minutes / 60} h"
+                            if (minutes == preselected) {
+                                Button(onClick = { onStart(minutes) }, modifier = Modifier.weight(1f)) { Text(label) }
+                            } else {
+                                OutlinedButton(onClick = { onStart(minutes) }, modifier = Modifier.weight(1f)) { Text(label) }
+                            }
+                        }
+                    }
+                }
+                Text(
+                    "Wassertiger zählt im Hintergrund und meldet sich, wenn die Zeit um ist. Das Video öffnet sich " +
+                        (b.positionSec?.let { "bei ${Links.formatClock(it)}." } ?: "."),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Muted,
+                )
+            }
+        },
+        confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
     )
 }

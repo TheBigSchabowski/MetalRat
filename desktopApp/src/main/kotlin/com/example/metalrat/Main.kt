@@ -103,4 +103,39 @@ private class DesktopPlatform(private val window: Frame) : Platform {
         val name = dialog.file ?: return
         onText(File(dialog.directory, name).readText())
     }
+
+    override fun practice(url: String?, title: String, minutes: Int): String? {
+        val started = Wassertiger.practice(minutes * 60, title)
+        url?.let(::open)
+        return if (started) null else "Wassertiger nicht gefunden (ab Version 1.5) – nur das Video geöffnet."
+    }
+}
+
+/** Starts a practice timer in Wassertiger: the running app via its local port, otherwise launches it. */
+private object Wassertiger {
+    private const val PORT = 47124
+
+    fun practice(seconds: Int, title: String): Boolean = viaPort(seconds, title) || launch(seconds, title)
+
+    private fun viaPort(seconds: Int, title: String): Boolean = runCatching {
+        val query = "seconds=$seconds&title=" + java.net.URLEncoder.encode(title, "UTF-8")
+        val conn = URI("http://127.0.0.1:$PORT/practice?$query").toURL().openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.connectTimeout = 800
+        conn.readTimeout = 1500
+        conn.responseCode.also { conn.disconnect() } == 204
+    }.getOrDefault(false)
+
+    private fun launch(seconds: Int, title: String): Boolean {
+        val args = listOf("--practice-seconds", "$seconds", "--practice-title", title)
+        val command = if (isMac) {
+            listOf("open", "-a", "Wassertiger", "--args") + args
+        } else {
+            val binary = listOf("/opt/wassertiger/bin/Wassertiger", "${System.getProperty("user.home")}/Wassertiger/bin/Wassertiger")
+                .firstOrNull { File(it).canExecute() } ?: return false
+            listOf(binary) + args
+        }
+        // `open` returns at once (exit code says whether the app exists); the Linux binary *is* the app: don't wait.
+        return runCatching { ProcessBuilder(command).start().let { if (isMac) it.waitFor() == 0 else true } }.getOrDefault(false)
+    }
 }

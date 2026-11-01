@@ -28,6 +28,17 @@ data class Bookmark(
     /** Android package that was in front when it was saved. */
     val sourcePackage: String? = null,
     val note: String? = null,
+    /** Set once the bookmark is practiced: drives the spaced repetition (see [SpacedRepetition]). */
+    val practice: Practice? = null,
+)
+
+/** Where a practiced bookmark stands: how often, when last, for how long, when it is due again. */
+@Serializable
+data class Practice(
+    val count: Int,
+    val lastAt: Long,
+    val lastMinutes: Int,
+    val due: Long,
 )
 
 fun newBookmarkId(): String = UUID.randomUUID().toString()

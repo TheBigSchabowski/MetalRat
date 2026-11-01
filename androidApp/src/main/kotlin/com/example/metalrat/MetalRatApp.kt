@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.io.File
 
 /** One store per process, shared by the activity, the tile, the share target and the accessibility service. */
@@ -22,6 +23,8 @@ class MetalRatApp : Application() {
         super.onCreate()
         instance = this
         ShareShortcut.publish(this)
+        // Every change to the bookmarks (practiced, deleted, imported) re-plans the next reminder.
+        scope.launch { store.items.collect { Reminders.schedule(this@MetalRatApp, it) } }
     }
 
     companion object {

@@ -1,11 +1,13 @@
 package com.example.metalrat
 
+import android.Manifest
 import android.app.StatusBarManager
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
@@ -40,10 +42,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+private const val WASSERTIGER = "com.example.wassertiger"
+private const val WASSERTIGER_PRACTICE = "com.example.wassertiger.action.PRACTICE"
+
 class MainActivity : ComponentActivity() {
     private var pendingExport: String? = null
     private var importCallback: ((String) -> Unit)? = null
     private var resumes by mutableIntStateOf(0)
+    private var requestedPractice by mutableStateOf<String?>(null)
+
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         val data = pendingExport
@@ -95,17 +103,48 @@ class MainActivity : ComponentActivity() {
             importCallback = onText
             importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
         }
+
+        override fun practice(url: String?, title: String, minutes: Int): String? {
+            // Reminders need it; asked the first time something is practiced.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            // Wassertiger's invisible PracticeActivity starts the timer service and then opens the video.
+            val wassertiger = Intent(WASSERTIGER_PRACTICE).setPackage(WASSERTIGER)
+                .putExtra("seconds", minutes * 60)
+                .putExtra("title", title)
+                .putExtra("url", url)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            return try {
+                startActivity(wassertiger)
+                null
+            } catch (e: ActivityNotFoundException) {
+                url?.let(::open)
+                "Wassertiger ist nicht installiert (oder älter als 1.5) – nur das Video geöffnet."
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = MetalRatApp.instance
+        requestedPractice = intent?.getStringExtra(Reminders.EXTRA_PRACTICE)
         setContent {
             MetalRatTheme {
-                BookmarkScreen(app.store, app.enricher, app.thumbs, platform, header = { SetupCard(resumes) })
+                BookmarkScreen(
+                    app.store, app.enricher, app.thumbs, platform,
+                    header = { SetupCard(resumes) },
+                    requestedPractice = requestedPractice,
+                    onPracticeRequestHandled = { requestedPractice = null },
+                )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent.getStringExtra(Reminders.EXTRA_PRACTICE)?.let { requestedPractice = it }
     }
 
     override fun onResume() {

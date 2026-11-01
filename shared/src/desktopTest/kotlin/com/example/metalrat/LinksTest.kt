@@ -127,3 +127,34 @@ class LinksTest {
         dir.deleteRecursively()
     }
 }
+
+class SpacedRepetitionTest {
+    private val min = 60_000L
+    private val hour = 60 * min
+
+    @Test fun intervalsCountFromTheEndOfPractice() {
+        val t0 = 1_000_000_000_000L
+        val first = SpacedRepetition.practiced(null, minutes = 5, now = t0)
+        assertEquals(1, first.count)
+        assertEquals(t0 + 5 * min + 45 * min, first.due)
+        val second = SpacedRepetition.practiced(first, minutes = 120, now = first.due)
+        assertEquals(first.due + 2 * hour + 2 * hour, second.due)
+        // Climbs the ladder and then stays at a month.
+        var p = second
+        repeat(10) { p = SpacedRepetition.practiced(p, 5, p.due) }
+        assertEquals(30 * 24 * hour + 5 * min, p.due - p.lastAt)
+    }
+
+    @Test fun labels() {
+        val now = 1_000_000_000_000L
+        fun label(inMs: Long) = SpacedRepetition.dueLabel(Practice(1, now, 5, now + inMs), now)
+        assertEquals("fällig", label(-1))
+        assertEquals("in 45 min", label(45 * min))
+        assertEquals("in 2 h 5 min", label(2 * hour + 5 * min))
+        assertEquals("in 3 Tagen", label(3 * 24 * hour))
+        assertEquals(10, SpacedRepetition.lastMinutes(listOf(
+            Bookmark("a", 0, practice = Practice(1, 5, 30, 0)),
+            Bookmark("b", 0, practice = Practice(1, 9, 10, 0)),
+        )))
+    }
+}
