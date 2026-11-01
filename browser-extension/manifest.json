@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MetalRat – Merken",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Speichert die aktuelle Seite mit Video-Zeitpunkt, markiertem Text und Vorschaubild in der MetalRat-App.",
   "permissions": ["activeTab", "scripting", "storage", "contextMenus", "alarms"],
   "host_permissions": ["http://127.0.0.1:47123/*"],

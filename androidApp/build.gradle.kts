@@ -23,7 +23,7 @@ android {
         applicationId = "com.example.metalrat"
         minSdk = 27
         targetSdk = 36
-        versionCode = 2
+        versionCode = 3
         versionName = libs.versions.app.get()
     }
 
