@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.Eichhorn" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF121417</item>
+    </style>
+
+    <style name="Theme.Eichhorn.Invisible" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:windowNoDisplay">false</item>
+    </style>
+</resources>
