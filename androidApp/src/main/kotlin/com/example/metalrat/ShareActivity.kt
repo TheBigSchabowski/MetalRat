@@ -13,7 +13,7 @@ class ShareActivity : Activity() {
             when (intent?.action) {
                 Intent.ACTION_PROCESS_TEXT ->
                     Capturer.captureSelection(this, intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString().orEmpty())
-                Intent.ACTION_SEND -> Capturer.captureShare(
+                Intent.ACTION_SEND -> Capturer.also { ShareShortcut.reportUsed(this) }.captureShare(
                     this,
                     text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString(),
                     subject = intent.getStringExtra(Intent.EXTRA_SUBJECT),

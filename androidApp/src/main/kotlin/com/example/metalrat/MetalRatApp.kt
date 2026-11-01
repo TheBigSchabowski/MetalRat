@@ -21,6 +21,7 @@ class MetalRatApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        ShareShortcut.publish(this)
     }
 
     companion object {

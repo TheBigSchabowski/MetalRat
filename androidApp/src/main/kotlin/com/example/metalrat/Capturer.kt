@@ -11,8 +11,23 @@ object Capturer {
         val fg = UrlReader.instance?.foreground()
         // A page with an address (Wikipedia …) only takes media info from its own app, otherwise
         // music playing in the background would end up on the Wikipedia bookmark.
-        val media = MediaSessions.current(context, fg?.pkg, onlyPkg = fg?.url != null)
+        val media = MediaSessions.current(context, fg?.pkg, onlyPkg = fg?.url != null || fg?.screen != null)
+        fg?.screen?.takeIf { media == null }?.let { screen ->
+            save(
+                Bookmark(
+                    id = newBookmarkId(),
+                    createdAt = System.currentTimeMillis(),
+                    url = screen.url,
+                    title = screen.caption ?: "@${screen.author}",
+                    author = "@${screen.author}",
+                    source = appLabel(context, fg.pkg),
+                    sourcePackage = fg.pkg,
+                ),
+            )
+            return "Gemerkt: @${screen.author}" + (screen.caption?.let { " – ${it.take(40)}" } ?: "")
+        }
         if (media == null && fg?.url == null) {
+            UrlReader.instance?.logForeground()
             return if (!MediaSessions.hasAccess(context) && UrlReader.instance == null) {
                 "MetalRat braucht noch Berechtigungen – öffne die App."
             } else {

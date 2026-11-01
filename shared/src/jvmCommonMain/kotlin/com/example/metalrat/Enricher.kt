@@ -40,8 +40,14 @@ class Enricher(private val store: BookmarkStore, private val scope: CoroutineSco
             return
         }
         if (!url.startsWith("http") || (b.thumbnailUrl != null && b.title != null)) return
+        // Login walls: fetching them yields "Login • Instagram" and the logo, not the post.
+        if (Links.host(url)?.let { h -> LOGIN_WALLED.any { h == it || h.endsWith(".$it") } } == true) return
         val meta = PageMeta.fetch(url) ?: return
         store.update(id) { it.copy(title = it.title ?: meta.title, thumbnailUrl = it.thumbnailUrl ?: meta.image) }
+    }
+
+    private companion object {
+        val LOGIN_WALLED = setOf("instagram.com", "facebook.com", "threads.net", "tiktok.com")
     }
 
     private fun needsYouTubeSearch(b: Bookmark): Boolean {
