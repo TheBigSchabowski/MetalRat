@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import android.app.StatusBarManager
 import android.content.ActivityNotFoundException
@@ -100,9 +100,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        val app = EichhornApp.instance
+        val app = MetalRatApp.instance
         setContent {
-            EichhornTheme {
+            MetalRatTheme {
                 BookmarkScreen(app.store, app.enricher, app.thumbs, platform, header = { SetupCard(resumes) })
             }
         }
@@ -184,14 +184,14 @@ class MainActivity : ComponentActivity() {
                 SetupStep(
                     done = media,
                     title = "Video-Zeitpunkt lesen",
-                    text = "Benachrichtigungszugriff für Eichhorn erlauben. Damit liest Eichhorn Titel und Position " +
+                    text = "Benachrichtigungszugriff für MetalRat erlauben. Damit liest MetalRat Titel und Position " +
                         "des laufenden Videos (YouTube, Browser, andere Player) – Benachrichtigungen selbst nicht.",
                     action = "Erlauben",
                 ) { openNotificationAccess() }
                 SetupStep(
                     done = reader,
                     title = "Link aus dem Browser lesen",
-                    text = "Bedienungshilfe „Eichhorn“ einschalten. Sie liest beim Merken die Adresse der offenen Seite. " +
+                    text = "Bedienungshilfe „MetalRat“ einschalten. Sie liest beim Merken die Adresse der offenen Seite. " +
                         "Tipp: Den Kurzbefehl dieser Bedienungshilfe auf „Lautstärketasten gedrückt halten“ stellen – " +
                         "dann merkt die Tastenkombi direkt.",
                     action = "Einschalten",

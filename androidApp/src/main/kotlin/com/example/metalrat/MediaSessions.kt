@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import android.content.ComponentName
 import android.content.Context
@@ -11,7 +11,7 @@ import android.service.notification.NotificationListenerService
 import androidx.core.app.NotificationManagerCompat
 
 /**
- * Exists only so the user can grant notification access: with it, Eichhorn may read the active
+ * Exists only so the user can grant notification access: with it, MetalRat may read the active
  * media sessions (title, position) of YouTube, browsers and other players. It reads no notifications.
  */
 class MediaListener : NotificationListenerService()

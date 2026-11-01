@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import android.accessibilityservice.AccessibilityButtonController
 import android.accessibilityservice.AccessibilityService

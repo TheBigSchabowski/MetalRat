@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import java.net.URI
 import java.net.URLDecoder

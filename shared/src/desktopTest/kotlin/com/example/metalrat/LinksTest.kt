@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import java.io.File
 import kotlin.io.path.createTempDirectory
@@ -107,7 +107,7 @@ class LinksTest {
     }
 
     @Test fun storeRoundTripAndImport() {
-        val dir = createTempDirectory("eichhorn").toFile()
+        val dir = createTempDirectory("metalrat").toFile()
         val file = File(dir, "bookmarks.json")
         val store = BookmarkStore(file)
         store.add(Bookmark(id = "a", createdAt = 1, url = "https://a.org"))
@@ -123,7 +123,7 @@ class LinksTest {
         assertEquals(1, store.importJson(other.exportJson()))
         assertEquals(listOf("c", "b", "a"), store.items.value.map { it.id })
         assertEquals("https://a.org", store.get("a")?.url)
-        assertTrue(file.readText().contains("\"app\": \"Eichhorn\""))
+        assertTrue(file.readText().contains("\"app\": \"MetalRat\""))
         dir.deleteRecursively()
     }
 }

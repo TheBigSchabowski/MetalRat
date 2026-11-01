@@ -1,12 +1,12 @@
-// Eichhorn – Browser-Erweiterung für Chrome, Brave, Edge und Firefox.
-// Alt+Umschalt+B, Klick aufs Symbol oder Rechtsklick › „In Eichhorn merken“: die Seite geht mit
-// Video-Zeitpunkt, markiertem Text und Vorschaubild an die Eichhorn-App auf diesem Rechner.
+// MetalRat – Browser-Erweiterung für Chrome, Brave, Edge und Firefox.
+// Alt+Umschalt+B, Klick aufs Symbol oder Rechtsklick › „In MetalRat merken“: die Seite geht mit
+// Video-Zeitpunkt, markiertem Text und Vorschaubild an die MetalRat-App auf diesem Rechner.
 // Läuft die App gerade nicht, wartet der Eintrag hier und wird jede Minute neu zugestellt.
 
 const api = globalThis.browser ?? globalThis.chrome;
 const ENDPOINT = "http://127.0.0.1:47123/add";
-const MENU_ID = "eichhorn-merken";
-const TITLE = "In Eichhorn merken";
+const MENU_ID = "metalrat-merken";
+const TITLE = "In MetalRat merken";
 
 api.runtime.onInstalled.addListener(async () => {
   try { await api.contextMenus.removeAll(); } catch (_) {}
@@ -121,7 +121,7 @@ async function saveQueue(queue) {
   await api.action.setBadgeBackgroundColor({ color: "#E08A3C" });
   await api.action.setBadgeText({ text: queue.length ? String(queue.length) : "" });
   await api.action.setTitle({
-    title: queue.length ? `${queue.length} wartend – Eichhorn-App öffnen, dann wird zugestellt` : TITLE,
+    title: queue.length ? `${queue.length} wartend – MetalRat-App öffnen, dann wird zugestellt` : TITLE,
   });
 }
 

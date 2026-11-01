@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -83,7 +83,7 @@ private val CardColor = Color(0xFF1C1F24)
 private val Muted = Color(0xFF9AA0A8)
 
 @Composable
-fun EichhornTheme(content: @Composable () -> Unit) {
+fun MetalRatTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = darkColorScheme(
             primary = Accent,
@@ -127,7 +127,7 @@ fun BookmarkScreen(
                 Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Eichhorn", style = MaterialTheme.typography.titleLarge, color = Accent, fontWeight = FontWeight.Bold)
+                Text("MetalRat", style = MaterialTheme.typography.titleLarge, color = Accent, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.width(12.dp))
                 OutlinedTextField(
                     value = query,
@@ -143,7 +143,7 @@ fun BookmarkScreen(
                         DropdownMenuItem(text = { Text("Als JSON exportieren") }, onClick = {
                             menuOpen = false
                             val day = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
-                            platform.exportJson(store.exportJson(), "eichhorn-$day.json")
+                            platform.exportJson(store.exportJson(), "metalrat-$day.json")
                         })
                         DropdownMenuItem(text = { Text("JSON importieren") }, onClick = {
                             menuOpen = false

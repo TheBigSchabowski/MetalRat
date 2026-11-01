@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
@@ -27,11 +27,11 @@ class CaptureServer(private val store: BookmarkStore, private val enricher: Enri
                 exchange.close()
             }
         }
-        server.executor = Executors.newSingleThreadExecutor { r -> Thread(r, "eichhorn-capture").apply { isDaemon = true } }
+        server.executor = Executors.newSingleThreadExecutor { r -> Thread(r, "metalrat-capture").apply { isDaemon = true } }
         server.start()
         true
     } catch (e: IOException) {
-        error = "Port $PORT ist belegt – läuft Eichhorn schon in einem anderen Fenster? Die Browser-Erweiterung liefert dorthin."
+        error = "Port $PORT ist belegt – läuft MetalRat schon in einem anderen Fenster? Die Browser-Erweiterung liefert dorthin."
         false
     }
 
@@ -47,7 +47,7 @@ class CaptureServer(private val store: BookmarkStore, private val enricher: Enri
         val path = ex.requestURI.path
         when {
             ex.requestMethod == "OPTIONS" -> respond(ex, 204, null)
-            path == "/ping" -> respond(ex, 200, """{"app":"Eichhorn"}""")
+            path == "/ping" -> respond(ex, 200, """{"app":"MetalRat"}""")
             path == "/add" && ex.requestMethod == "POST" -> {
                 val body = ex.requestBody.use { it.readNBytes(1_000_000) }.toString(Charsets.UTF_8)
                 val request = runCatching { BookmarkJson.json.decodeFromString(CaptureRequest.serializer(), body) }

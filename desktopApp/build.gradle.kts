@@ -18,7 +18,7 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.example.eichhorn.MainKt"
+        mainClass = "com.example.metalrat.MainKt"
 
         // jpackage comes from a Temurin 21 toolchain (auto-provisioned): Android Studio's JBR also
         // satisfies "JDK 21" but ships without jpackage. The app bundles that JDK's runtime via jlink.
@@ -30,19 +30,19 @@ compose.desktop {
         nativeDistributions {
             // Each format can only be built on its own operating system: the DMG on the Mac, the DEB on Linux.
             targetFormats(TargetFormat.Dmg, TargetFormat.Deb)
-            packageName = "Eichhorn"
+            packageName = "MetalRat"
             packageVersion = libs.versions.app.get()
-            description = "Eichhorn – Videos mit Zeitpunkt und Textstellen merken"
+            description = "MetalRat – Videos mit Zeitpunkt und Textstellen merken"
             vendor = "TheBigSchabowski"
             // jdk.httpserver: receives captures from the browser extension.
             // jdk.crypto.ec: EC cipher suites, without them HTTPS to many sites fails (thumbnails, titles).
             modules("java.desktop", "jdk.httpserver", "jdk.crypto.ec")
             macOS {
-                bundleID = "com.example.eichhorn"
+                bundleID = "com.example.metalrat"
                 iconFile.set(project.file("icon.icns"))
             }
             linux {
-                packageName = "eichhorn"
+                packageName = "metalrat"
                 iconFile.set(project.file("icon.png"))
                 debMaintainer = "TheBigSchabowski@users.noreply.github.com"
                 appCategory = "utils"

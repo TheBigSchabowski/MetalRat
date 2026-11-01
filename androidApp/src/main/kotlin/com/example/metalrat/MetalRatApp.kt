@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import android.app.Application
 import android.content.Context
@@ -12,7 +12,7 @@ import kotlinx.coroutines.SupervisorJob
 import java.io.File
 
 /** One store per process, shared by the activity, the tile, the share target and the accessibility service. */
-class EichhornApp : Application() {
+class MetalRatApp : Application() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val store by lazy { BookmarkStore(File(filesDir, "bookmarks.json")) }
     val enricher by lazy { Enricher(store, scope) }
@@ -24,7 +24,7 @@ class EichhornApp : Application() {
     }
 
     companion object {
-        lateinit var instance: EichhornApp
+        lateinit var instance: MetalRatApp
             private set
     }
 }

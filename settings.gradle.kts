@@ -23,5 +23,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Eichhorn"
+rootProject.name = "MetalRat"
 include(":shared", ":androidApp", ":desktopApp")

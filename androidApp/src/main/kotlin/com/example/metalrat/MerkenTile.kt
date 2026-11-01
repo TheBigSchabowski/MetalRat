@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import android.content.Context
 import android.os.Build
@@ -35,7 +35,7 @@ class MerkenTile : TileService() {
 }
 
 object Prefs {
-    private fun prefs(context: Context) = context.getSharedPreferences("eichhorn", Context.MODE_PRIVATE)
+    private fun prefs(context: Context) = context.getSharedPreferences("metalrat", Context.MODE_PRIVATE)
     fun tileAdded(context: Context) = prefs(context).getBoolean("tile_added", false)
     fun setTileAdded(context: Context) = prefs(context).edit().putBoolean("tile_added", true).apply()
 }

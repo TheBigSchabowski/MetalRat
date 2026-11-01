@@ -1,4 +1,4 @@
-"""Draws the Eichhorn icon (orange bookmark ribbon with a play cut-out) without extra packages.
+"""Draws the MetalRat icon (orange bookmark ribbon with a play cut-out) without extra packages.
 
     python3 tools/make_icons.py      # writes desktopApp/icon.png and tools/build/icon-512.png
 Then `tools/make_icons.sh` derives icon.icns and the browser-extension icons with sips/iconutil (macOS).

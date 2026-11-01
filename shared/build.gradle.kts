@@ -10,7 +10,7 @@ kotlin {
     jvmToolchain(21)
 
     android {
-        namespace = "com.example.eichhorn.shared"
+        namespace = "com.example.metalrat.shared"
         compileSdk = 36
         minSdk = 27
     }

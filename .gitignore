@@ -45,3 +45,4 @@ keystore.properties
 .DS_Store
 /browser-extension/*.zip
 /tools/build
+/dist

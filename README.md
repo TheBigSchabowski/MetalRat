@@ -1,4 +1,4 @@
-# Eichhorn
+# MetalRat
 
 Merkt sich Videos **mit Zeitpunkt** und Textstellen **mit Markierung** – auf Android, Mac und Linux.
 Die App zeigt alles mit Vorschaubild; gibt es keins (mehr), steht der Link da. Antippen öffnet das
@@ -17,8 +17,8 @@ Merken geht auf drei Wegen:
 | **Lautstärketasten gedrückt halten** (optional, Kurzbefehl der Bedienungshilfe) | wie die Kachel |
 
 Einrichtung (die App führt durch):
-1. **Benachrichtigungszugriff** – damit liest Eichhorn Titel und Position des laufenden Videos.
-2. **Bedienungshilfe „Eichhorn – Merken“** – liest die Adresse der offenen Seite im Browser.
+1. **Benachrichtigungszugriff** – damit liest MetalRat Titel und Position des laufenden Videos.
+2. **Bedienungshilfe „MetalRat – Merken“** – liest die Adresse der offenen Seite im Browser.
    In den Einstellungen dieser Bedienungshilfe kann man den Kurzbefehl auf „Lautstärketasten gedrückt halten“ legen.
 3. **Kachel** hinzufügen.
 
@@ -26,7 +26,7 @@ Android 13+: Bei selbst installierten APKs sind 1 und 2 erst nach *App-Info › 
 
 Die Power-Tastenkombi selbst kann keine App abfangen; die Lautstärketasten-Kombi ist der Ersatz.
 
-Aus der YouTube-App liefert Android nur Titel und Position, nicht den Link. Eichhorn sucht das Video
+Aus der YouTube-App liefert Android nur Titel und Position, nicht den Link. MetalRat sucht das Video
 dann über den Titel auf YouTube. Exakt ist „Teilen › Merken“, dann wird der Zeitpunkt aus der laufenden Wiedergabe ergänzt.
 
 ## Mac / Linux
@@ -37,7 +37,7 @@ Browser-Erweiterung entgegen. Ist die App zu, wartet die Erweiterung und liefert
 
 ### Browser-Erweiterung (`browser-extension/`)
 
-**Alt+Umschalt+B** (Mac: ⌥⇧B), Klick aufs Symbol oder Rechtsklick › „In Eichhorn merken“.
+**Alt+Umschalt+B** (Mac: ⌥⇧B), Klick aufs Symbol oder Rechtsklick › „In MetalRat merken“.
 Gespeichert werden URL, Video-Zeitpunkt, markierter Text und Vorschaubild.
 
 - **Chrome / Brave / Edge:** `chrome://extensions` › Entwicklermodus › „Entpackte Erweiterung laden“ › Ordner `browser-extension`.
@@ -52,16 +52,16 @@ Gespeichert werden URL, Video-Zeitpunkt, markierter Text und Vorschaubild.
 fehlende Einträge. Lokale Vorschaubilder vom Handy gibt es auf dem Rechner nicht; dort steht dann der Link
 (YouTube-Vorschaubilder kommen überall neu von YouTube).
 
-Daten: Android im App-Speicher, Mac `~/Library/Application Support/Eichhorn/`, Linux `~/.local/share/eichhorn/`.
+Daten: Android im App-Speicher, Mac `~/Library/Application Support/MetalRat/`, Linux `~/.local/share/metalrat/`.
 
 ## Bauen
 
 ```sh
 ./gradlew :shared:desktopTest                 # Tests
-./gradlew :androidApp:assembleRelease         # APK, signiert mit ~/.android/eichhorn-release.jks (+ .pass)
+./gradlew :androidApp:assembleRelease         # APK, signiert mit ~/.android/metalrat-release.jks (+ .pass)
 ./gradlew :desktopApp:packageDmg              # Mac
-./gradlew :desktopApp:packageDeb              # Linux (nur auf Linux; macht auch die GitHub Action)
 ./gradlew :desktopApp:run                     # Desktop-App direkt starten
+tools/release-linux.sh                        # Linux .deb + .tar.gz auf hostinger bauen → dist/linux
 tools/make_icons.sh                           # Icons neu zeichnen
 ```
 

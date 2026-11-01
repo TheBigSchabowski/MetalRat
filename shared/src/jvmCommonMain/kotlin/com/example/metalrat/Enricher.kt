@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

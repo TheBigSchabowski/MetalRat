@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -14,7 +14,7 @@ object Capturer {
         val media = MediaSessions.current(context, fg?.pkg, onlyPkg = fg?.url != null)
         if (media == null && fg?.url == null) {
             return if (!MediaSessions.hasAccess(context) && UrlReader.instance == null) {
-                "Eichhorn braucht noch Berechtigungen – öffne die App."
+                "MetalRat braucht noch Berechtigungen – öffne die App."
             } else {
                 "Nichts zum Merken gefunden: kein Video und kein Link im Vordergrund."
             }
@@ -91,11 +91,11 @@ object Capturer {
                 sourcePackage = fg?.pkg,
             ),
         )
-        return if (fg?.url != null) "Textstelle gemerkt" else "Text gemerkt – ohne Link (Bedienungshilfe in Eichhorn einschalten)"
+        return if (fg?.url != null) "Textstelle gemerkt" else "Text gemerkt – ohne Link (Bedienungshilfe in MetalRat einschalten)"
     }
 
     private fun save(b: Bookmark) {
-        val app = EichhornApp.instance
+        val app = MetalRatApp.instance
         app.store.add(b)
         app.enricher.enrich(b.id)
     }

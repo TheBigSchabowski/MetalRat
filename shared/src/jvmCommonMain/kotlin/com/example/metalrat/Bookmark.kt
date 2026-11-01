@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -34,7 +34,7 @@ fun newBookmarkId(): String = UUID.randomUUID().toString()
 
 @Serializable
 data class ExportFile(
-    val app: String = "Eichhorn",
+    val app: String = "MetalRat",
     val version: Int = 1,
     val exportedAt: Long,
     val bookmarks: List<Bookmark>,

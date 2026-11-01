@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -30,8 +30,8 @@ private val isMac = "mac" in os
 private fun dataDir(): File {
     val home = System.getProperty("user.home")
     return when {
-        isMac -> File(home, "Library/Application Support/Eichhorn")
-        else -> File(System.getenv("XDG_DATA_HOME")?.takeIf { it.isNotBlank() } ?: "$home/.local/share", "eichhorn")
+        isMac -> File(home, "Library/Application Support/MetalRat")
+        else -> File(System.getenv("XDG_DATA_HOME")?.takeIf { it.isNotBlank() } ?: "$home/.local/share", "metalrat")
     }
 }
 
@@ -47,12 +47,12 @@ fun main() {
     application {
         Window(
             onCloseRequest = ::exitApplication,
-            title = "Eichhorn",
+            title = "MetalRat",
             icon = icon,
             state = rememberWindowState(width = 1100.dp, height = 800.dp),
         ) {
             val platform = remember { DesktopPlatform(window) }
-            EichhornTheme {
+            MetalRatTheme {
                 BookmarkScreen(store, enricher, thumbs, platform, header = {
                     server.error?.let {
                         Text(it, color = Color(0xFFFF8A80), style = MaterialTheme.typography.bodySmall,
@@ -70,9 +70,9 @@ private class DesktopPlatform(private val window: Frame) : Platform {
     override val emptyHint = """
         Noch nichts gemerkt.
 
-        Im Browser: $key drücken oder auf das Eichhorn-Symbol der Erweiterung klicken. Die Seite landet hier – mit dem Zeitpunkt des Videos und, falls du Text markiert hast, mit der Textstelle. Beim Öffnen springt das Video dorthin bzw. der Browser scrollt zur Stelle und markiert sie.
+        Im Browser: $key drücken oder auf das MetalRat-Symbol der Erweiterung klicken. Die Seite landet hier – mit dem Zeitpunkt des Videos und, falls du Text markiert hast, mit der Textstelle. Beim Öffnen springt das Video dorthin bzw. der Browser scrollt zur Stelle und markiert sie.
 
-        Rechtsklick › „In Eichhorn merken“ geht auch, ebenso oben „+ Link“.
+        Rechtsklick › „In MetalRat merken“ geht auch, ebenso oben „+ Link“.
 
         Die Erweiterung liegt im Projektordner unter browser-extension/ (Anleitung in der README).
     """.trimIndent()

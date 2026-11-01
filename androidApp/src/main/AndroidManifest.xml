@@ -13,11 +13,11 @@
     </queries>
 
     <application
-        android:name=".EichhornApp"
+        android:name=".MetalRatApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.Eichhorn">
+        android:theme="@style/Theme.MetalRat">
 
         <activity
             android:name=".MainActivity"
@@ -37,7 +37,7 @@
             android:label="@string/action_label"
             android:noHistory="true"
             android:taskAffinity=""
-            android:theme="@style/Theme.Eichhorn.Invisible">
+            android:theme="@style/Theme.MetalRat.Invisible">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />

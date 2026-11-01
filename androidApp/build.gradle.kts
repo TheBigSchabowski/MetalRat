@@ -8,11 +8,11 @@ kotlin {
 }
 
 // Release key lives outside the repo; without it the release APK stays unsigned.
-val releaseKey = file("${System.getProperty("user.home")}/.android/eichhorn-release.jks")
-val releasePass = file("${System.getProperty("user.home")}/.android/eichhorn-release.pass")
+val releaseKey = file("${System.getProperty("user.home")}/.android/metalrat-release.jks")
+val releasePass = file("${System.getProperty("user.home")}/.android/metalrat-release.pass")
 
 android {
-    namespace = "com.example.eichhorn"
+    namespace = "com.example.metalrat"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.eichhorn"
+        applicationId = "com.example.metalrat"
         minSdk = 27
         targetSdk = 36
         versionCode = 1
@@ -33,7 +33,7 @@ android {
                 val pass = releasePass.readText().trim()
                 storeFile = releaseKey
                 storePassword = pass
-                keyAlias = "eichhorn"
+                keyAlias = "metalrat"
                 keyPassword = pass
             }
         }

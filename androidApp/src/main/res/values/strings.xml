@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">Eichhorn</string>
+    <string name="app_name">MetalRat</string>
     <string name="tile_label">Merken</string>
     <string name="action_label">Merken</string>
-    <string name="a11y_label">Eichhorn – Merken</string>
+    <string name="a11y_label">MetalRat – Merken</string>
     <string name="a11y_description">Liest beim Merken die Adresse der gerade offenen Seite aus der Adressleiste des Browsers, damit das Lesezeichen den richtigen Link bekommt. Als Kurzbefehl (z. B. Lautstärketasten gedrückt halten) merkt sie direkt das laufende Video bzw. die offene Seite. Die Daten bleiben auf deinem Handy.</string>
 </resources>

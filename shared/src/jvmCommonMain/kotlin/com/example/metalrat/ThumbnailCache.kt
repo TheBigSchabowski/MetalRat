@@ -1,4 +1,4 @@
-package com.example.eichhorn
+package com.example.metalrat
 
 import androidx.compose.ui.graphics.ImageBitmap
 import kotlinx.coroutines.Dispatchers
