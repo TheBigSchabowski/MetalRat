@@ -170,3 +170,29 @@ class ResetTest {
         assertEquals(now + 1 + 5 * 60_000L + 45 * 60_000L, SpacedRepetition.practiced(reset, 5, now + 1).due)
     }
 }
+
+class CustomIntervalsTest {
+    private val min = 60_000L
+
+    @Test fun parseAndFormat() {
+        assertEquals(45 * min, SpacedRepetition.parseInterval("45m"))
+        assertEquals(90 * min, SpacedRepetition.parseInterval("1h30m"))
+        assertEquals(90 * min, SpacedRepetition.parseInterval("90"))
+        assertEquals(30L * 24 * 60 * min, SpacedRepetition.parseInterval("1mo"))
+        assertNull(SpacedRepetition.parseInterval("bald"))
+        assertEquals("45m, 2h, 1d, 3d, 1w, 2w, 1mo", SpacedRepetition.formatLadder(SpacedRepetition.LADDER))
+        assertEquals(SpacedRepetition.LADDER, SpacedRepetition.parseLadder("45m, 2h, 1d, 3d, 1w, 2w, 1mo"))
+        assertEquals("1h30m", SpacedRepetition.formatInterval(90 * min))
+        assertNull(SpacedRepetition.parseLadder("45m, quatsch"))
+    }
+
+    @Test fun ownLadderIsUsedAndStored() {
+        val dir = createTempDirectory("ladder").toFile()
+        val store = BookmarkStore(File(dir, "b.json"))
+        store.setIntervals(listOf(10 * min, 60 * min))
+        val p = SpacedRepetition.practiced(null, 5, 0, store.ladder)
+        assertEquals(15 * min, p.due)
+        assertEquals(listOf(10 * min, 60 * min), BookmarkStore(File(dir, "b.json")).ladder)
+        dir.deleteRecursively()
+    }
+}

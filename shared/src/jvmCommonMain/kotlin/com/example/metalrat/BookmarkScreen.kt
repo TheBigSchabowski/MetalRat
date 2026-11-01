@@ -124,6 +124,9 @@ fun BookmarkScreen(
     var query by remember { mutableStateOf("") }
     var practiceTab by remember { mutableStateOf(false) }
     var practicing by remember { mutableStateOf<Bookmark?>(null) }
+    var rescheduling by remember { mutableStateOf<Bookmark?>(null) }
+    var editingIntervals by remember { mutableStateOf(false) }
+    val intervals by store.intervals.collectAsState()
     // Re-evaluates "fällig" labels every minute.
     val now by produceState(System.currentTimeMillis()) {
         while (true) {
@@ -177,6 +180,10 @@ fun BookmarkScreen(
                             val day = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
                             platform.exportJson(store.exportJson(), "metalrat-$day.json")
                         })
+                        DropdownMenuItem(text = { Text("Wiederholungs-Abstände…") }, onClick = {
+                            menuOpen = false
+                            editingIntervals = true
+                        })
                         DropdownMenuItem(text = { Text("JSON importieren") }, onClick = {
                             menuOpen = false
                             platform.importJson { text ->
@@ -221,6 +228,7 @@ fun BookmarkScreen(
                             onOpen = { Links.openUrl(b)?.let(platform::open) },
                             onPractice = { practicing = b },
                             onStopPractice = { store.update(b.id) { it.copy(practice = null) } },
+                            onReschedule = { rescheduling = b },
                             onResetPractice = {
                                 store.update(b.id) { it.copy(practice = it.practice?.let { p -> SpacedRepetition.reset(p, System.currentTimeMillis()) }) }
                                 scope.launch { snackbar.showSnackbar("Zurückgesetzt – wieder von vorn (45 min, 2 h, …)") }
@@ -246,9 +254,23 @@ fun BookmarkScreen(
         PracticeDialog(b, preselected = SpacedRepetition.lastMinutes(items), onDismiss = { practicing = null }) { minutes ->
             practicing = null
             val current = store.get(b.id) ?: b
-            store.update(b.id) { it.copy(practice = SpacedRepetition.practiced(it.practice, minutes, System.currentTimeMillis())) }
+            store.update(b.id) { it.copy(practice = SpacedRepetition.practiced(it.practice, minutes, System.currentTimeMillis(), store.ladder)) }
             platform.practice(Links.openUrl(current), SpacedRepetition.timerTitle(current), minutes)
                 ?.let { message -> scope.launch { snackbar.showSnackbar(message) } }
+        }
+    }
+    rescheduling?.let { b ->
+        RescheduleDialog(b, onDismiss = { rescheduling = null }) { inMs ->
+            rescheduling = null
+            val due = System.currentTimeMillis() + inMs
+            store.update(b.id) { it.copy(practice = it.practice?.let { p -> SpacedRepetition.dueAt(p, due) }) }
+            scope.launch { snackbar.showSnackbar("Nächste Wiederholung " + (store.get(b.id)?.practice?.let { SpacedRepetition.dueLabel(it, System.currentTimeMillis()) } ?: "")) }
+        }
+    }
+    if (editingIntervals) {
+        IntervalsDialog(intervals ?: SpacedRepetition.LADDER, onDismiss = { editingIntervals = false }) { ladder ->
+            editingIntervals = false
+            store.setIntervals(ladder)
         }
     }
     editing?.let { b ->
@@ -285,6 +307,7 @@ private fun BookmarkCard(
     onPractice: () -> Unit,
     onStopPractice: () -> Unit,
     onResetPractice: () -> Unit,
+    onReschedule: () -> Unit,
     onEdit: () -> Unit,
     onCopy: () -> Unit,
     onDelete: () -> Unit,
@@ -382,6 +405,7 @@ private fun BookmarkCard(
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(text = { Text("Bearbeiten") }, onClick = { menuOpen = false; onEdit() })
                         if (b.practice != null) {
+                            DropdownMenuItem(text = { Text("Nächste Wiederholung…") }, onClick = { menuOpen = false; onReschedule() })
                             DropdownMenuItem(text = { Text("Wiederholung zurücksetzen") }, onClick = { menuOpen = false; onResetPractice() })
                             DropdownMenuItem(text = { Text("Nicht mehr üben") }, onClick = { menuOpen = false; onStopPractice() })
                         }
@@ -497,6 +521,74 @@ private fun PracticeDialog(b: Bookmark, preselected: Int, onDismiss: () -> Unit,
             }
         },
         confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
+    )
+}
+
+/** Moves the next repetition: quick choices or a free duration like "1h30m". */
+@Composable
+private fun RescheduleDialog(b: Bookmark, onDismiss: () -> Unit, onSet: (Long) -> Unit) {
+    var custom by remember { mutableStateOf("") }
+    val customMs = SpacedRepetition.parseInterval(custom)
+    val quick = listOf("1 min" to "1m", "10 min" to "10m", "45 min" to "45m", "2 h" to "2h", "morgen" to "1d", "3 Tage" to "3d", "1 Woche" to "1w")
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Nächste Wiederholung") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(b.title ?: b.url?.let(Links::displayLink).orEmpty(), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.SemiBold)
+                quick.chunked(3).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        row.forEach { (label, value) ->
+                            OutlinedButton(onClick = { onSet(SpacedRepetition.parseInterval(value)!!) }, modifier = Modifier.weight(1f)) {
+                                Text("in $label", maxLines = 1)
+                            }
+                        }
+                        repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+                OutlinedTextField(
+                    custom, { custom = it },
+                    label = { Text("Eigene Zeit, z. B. 1h30m, 2d, 3w") },
+                    singleLine = true,
+                    isError = custom.isNotBlank() && customMs == null,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = customMs != null, onClick = { customMs?.let(onSet) }) { Text("Setzen") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
+    )
+}
+
+/** The repetition ladder for all videos, as an editable list. */
+@Composable
+private fun IntervalsDialog(current: List<Long>, onDismiss: () -> Unit, onSave: (List<Long>?) -> Unit) {
+    var text by remember { mutableStateOf(SpacedRepetition.formatLadder(current)) }
+    val parsed = SpacedRepetition.parseLadder(text)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Wiederholungs-Abstände") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Nach jeder Übung der nächste Abstand, gezählt ab dem Ende der Übung. Nach dem letzten bleibt es dabei. " +
+                        "Einheiten: m, h, d, w, mo (30 Tage).",
+                    style = MaterialTheme.typography.bodySmall, color = Muted,
+                )
+                OutlinedTextField(
+                    text, { text = it },
+                    label = { Text("Abstände, mit Komma getrennt") },
+                    isError = parsed == null,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                TextButton(onClick = { text = SpacedRepetition.formatLadder(SpacedRepetition.LADDER) }) { Text("Standard wiederherstellen") }
+            }
+        },
+        confirmButton = { TextButton(enabled = parsed != null, onClick = { onSave(parsed) }) { Text("Speichern") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
     )
 }

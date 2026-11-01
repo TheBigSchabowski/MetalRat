@@ -13,16 +13,64 @@ object SpacedRepetition {
     private const val HOUR = 60 * MIN
     private const val DAY = 24 * HOUR
 
-    val LADDER = listOf(45 * MIN, 2 * HOUR, DAY, 3 * DAY, 7 * DAY, 14 * DAY, 30 * DAY)
+    private const val WEEK = 7 * DAY
+    private const val MONTH = 30 * DAY
+
+    val LADDER = listOf(45 * MIN, 2 * HOUR, DAY, 3 * DAY, WEEK, 2 * WEEK, MONTH)
 
     /** The durations offered when starting a practice session, in minutes. */
     val DURATIONS = listOf(5, 10, 15, 30, 60, 120)
 
-    fun practiced(previous: Practice?, minutes: Int, now: Long): Practice {
+    fun practiced(previous: Practice?, minutes: Int, now: Long, ladder: List<Long> = LADDER): Practice {
+        val steps = ladder.ifEmpty { LADDER }
         val count = previous?.count ?: 0
         val end = now + minutes * MIN
-        return Practice(count = count + 1, lastAt = now, lastMinutes = minutes, due = end + LADDER[minOf(count, LADDER.lastIndex)])
+        return Practice(count = count + 1, lastAt = now, lastMinutes = minutes, due = end + steps[minOf(count, steps.lastIndex)])
     }
+
+    /** "45m", "2h", "1h30m", "1d", "1w", "1mo" (30 days), a bare number = minutes. Null if unreadable. */
+    fun parseInterval(text: String): Long? {
+        val s = text.trim().lowercase().replace(" ", "")
+        if (s.isEmpty()) return null
+        s.toLongOrNull()?.let { return (it * MIN).takeIf { ms -> ms > 0 } }
+        val part = Regex("(\\d+)(mo|min|w|d|h|m)")
+        if (part.replace(s, "").isNotEmpty()) return null
+        val ms = part.findAll(s).sumOf { m ->
+            val n = m.groupValues[1].toLong()
+            n * when (m.groupValues[2]) {
+                "mo" -> MONTH
+                "w" -> WEEK
+                "d" -> DAY
+                "h" -> HOUR
+                else -> MIN
+            }
+        }
+        return ms.takeIf { it > 0 }
+    }
+
+    /** Inverse of [parseInterval]: 2_700_000 → "45m", 90 min → "1h30m", 30 days → "1mo". */
+    fun formatInterval(ms: Long): String {
+        if (ms % MONTH == 0L) return "${ms / MONTH}mo"
+        if (ms % WEEK == 0L) return "${ms / WEEK}w"
+        var rest = ms / MIN
+        return buildString {
+            val d = rest / (24 * 60); rest %= 24 * 60
+            val h = rest / 60; val m = rest % 60
+            if (d > 0) append("${d}d")
+            if (h > 0) append("${h}h")
+            if (m > 0 || isEmpty()) append("${m}m")
+        }
+    }
+
+    /** A whole ladder: "45m, 2h, 1d" → list; null if any entry is unreadable. */
+    fun parseLadder(text: String): List<Long>? =
+        text.split(',', ';', '→', '\n').map { it.trim() }.filter { it.isNotEmpty() }
+            .map { parseInterval(it) ?: return null }.takeIf { it.isNotEmpty() }
+
+    fun formatLadder(ladder: List<Long>): String = ladder.joinToString(", ") { formatInterval(it) }
+
+    /** Moves the next repetition to [due] (custom "Nächste Wiederholung"). */
+    fun dueAt(p: Practice, due: Long): Practice = p.copy(due = due)
 
     /** Back to the start of the ladder (e.g. after being too generous with yourself): due right now. */
     fun reset(p: Practice, now: Long): Practice = p.copy(count = 0, due = now)

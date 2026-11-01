@@ -49,6 +49,8 @@ data class ExportFile(
     val version: Int = 1,
     val exportedAt: Long,
     val bookmarks: List<Bookmark>,
+    /** Own repetition intervals ("45m", "2h", …); null = the default ladder. */
+    val intervals: List<String>? = null,
 )
 
 object BookmarkJson {
@@ -59,8 +61,21 @@ object BookmarkJson {
         encodeDefaults = true
     }
 
-    fun encode(bookmarks: List<Bookmark>): String =
-        json.encodeToString(ExportFile.serializer(), ExportFile(exportedAt = System.currentTimeMillis(), bookmarks = bookmarks))
+    fun encode(bookmarks: List<Bookmark>, intervals: List<Long>? = null): String = json.encodeToString(
+        ExportFile.serializer(),
+        ExportFile(
+            exportedAt = System.currentTimeMillis(),
+            bookmarks = bookmarks,
+            intervals = intervals?.map(SpacedRepetition::formatInterval),
+        ),
+    )
+
+    /** The intervals stored in an export file, if any. */
+    fun parseIntervals(text: String): List<Long>? = runCatching {
+        val element = json.parseToJsonElement(text)
+        if (element is JsonArray) null
+        else json.decodeFromJsonElement<ExportFile>(element).intervals?.mapNotNull(SpacedRepetition::parseInterval)?.ifEmpty { null }
+    }.getOrNull()
 
     /** Accepts an export file or a bare JSON array of bookmarks. */
     fun parse(text: String): List<Bookmark> {

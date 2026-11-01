@@ -11,6 +11,18 @@ class BookmarkStore(private val file: File) {
     private val _items = MutableStateFlow(load())
     val items: StateFlow<List<Bookmark>> get() = _items
 
+    /** Own repetition ladder; null = [SpacedRepetition.LADDER]. Lives in the same file. */
+    private val _intervals = MutableStateFlow(if (file.exists()) runCatching { BookmarkJson.parseIntervals(file.readText()) }.getOrNull() else null)
+    val intervals: StateFlow<List<Long>?> get() = _intervals
+
+    @Synchronized
+    fun setIntervals(ladder: List<Long>?) {
+        _intervals.value = ladder?.takeIf { it != SpacedRepetition.LADDER }
+        save(_items.value)
+    }
+
+    val ladder: List<Long> get() = _intervals.value ?: SpacedRepetition.LADDER
+
     fun get(id: String): Bookmark? = _items.value.firstOrNull { it.id == id }
 
     /** Adds or replaces (same id) a bookmark. */
@@ -42,7 +54,7 @@ class BookmarkStore(private val file: File) {
         return fresh.size
     }
 
-    fun exportJson(): String = BookmarkJson.encode(_items.value)
+    fun exportJson(): String = BookmarkJson.encode(_items.value, _intervals.value)
 
     private fun set(list: List<Bookmark>) {
         val sorted = list.sortedByDescending { it.createdAt }
@@ -64,7 +76,7 @@ class BookmarkStore(private val file: File) {
     private fun save(list: List<Bookmark>) {
         file.parentFile?.mkdirs()
         val tmp = File(file.parentFile, "${file.name}.tmp")
-        tmp.writeText(BookmarkJson.encode(list))
+        tmp.writeText(BookmarkJson.encode(list, _intervals.value))
         Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
     }
 }
