@@ -158,3 +158,15 @@ class SpacedRepetitionTest {
         )))
     }
 }
+
+class ResetTest {
+    @Test fun resetStartsTheLadderAgain() {
+        val now = 1_000_000_000_000L
+        var p = SpacedRepetition.practiced(null, 5, now)
+        repeat(3) { p = SpacedRepetition.practiced(p, 5, p.due) }
+        val reset = SpacedRepetition.reset(p, now + 1)
+        assertEquals(0, reset.count)
+        assertTrue(SpacedRepetition.isDue(reset, now + 1))
+        assertEquals(now + 1 + 5 * 60_000L + 45 * 60_000L, SpacedRepetition.practiced(reset, 5, now + 1).due)
+    }
+}

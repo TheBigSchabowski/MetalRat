@@ -24,6 +24,9 @@ object SpacedRepetition {
         return Practice(count = count + 1, lastAt = now, lastMinutes = minutes, due = end + LADDER[minOf(count, LADDER.lastIndex)])
     }
 
+    /** Back to the start of the ladder (e.g. after being too generous with yourself): due right now. */
+    fun reset(p: Practice, now: Long): Practice = p.copy(count = 0, due = now)
+
     /** The duration chosen last time, preselected in the dialog. */
     fun lastMinutes(items: List<Bookmark>): Int =
         items.mapNotNull { it.practice }.maxByOrNull { it.lastAt }?.lastMinutes ?: DURATIONS.first()

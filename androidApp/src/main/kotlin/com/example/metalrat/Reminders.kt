@@ -44,33 +44,40 @@ object Reminders {
         prefs.edit().putLong("last_check", now).apply()
         val due = items.filter { b -> b.practice?.due?.let { it in (since + 1)..now } == true }
         if (due.isEmpty()) return
+        // Everything that is due now, not just what became due since the last check.
+        val allDue = items.filter { b -> b.practice?.let { it.due <= now } == true }.sortedBy { it.practice!!.due }
         val notifications = context.getSystemService(NotificationManager::class.java)
+        // An ordinary notification (default importance), nothing alarm-like.
         notifications.createNotificationChannel(
             NotificationChannel(CHANNEL, "Üben fällig", NotificationManager.IMPORTANCE_DEFAULT),
         )
-        for (b in due) {
-            val open = PendingIntent.getActivity(
-                context, b.id.hashCode(),
-                Intent(context, MainActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    .putExtra(EXTRA_PRACTICE, b.id),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-            val p = b.practice!!
-            notifications.notify(
-                b.id.hashCode(),
-                Notification.Builder(context, CHANNEL)
-                    .setSmallIcon(R.drawable.ic_tile)
-                    .setContentTitle("Üben fällig")
-                    .setContentText(b.title ?: b.url?.let(Links::displayLink) ?: "Video")
-                    .setSubText("${p.count + 1}. Wiederholung")
-                    .setContentIntent(open)
-                    .addAction(Notification.Action.Builder(null, "Üben", open).build())
-                    .setAutoCancel(true)
-                    .build(),
-            )
-        }
+        fun name(b: Bookmark) = b.title ?: b.url?.let(Links::displayLink) ?: "Video"
+        val single = allDue.singleOrNull()
+        val open = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(EXTRA_PRACTICE, single?.id ?: OPEN_PRACTICE_TAB),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val text = if (single != null) name(single) else "${name(allDue.first())} + ${allDue.size - 1} weitere"
+        // One notification for all: replaced, not stacked, when more become due.
+        notifications.notify(
+            NOTIFICATION_ID,
+            Notification.Builder(context, CHANNEL)
+                .setSmallIcon(R.drawable.ic_tile)
+                .setContentTitle("Üben fällig")
+                .setContentText(text)
+                .setStyle(Notification.BigTextStyle().bigText(allDue.take(6).joinToString("\n") { name(it) }))
+                .setContentIntent(open)
+                .addAction(Notification.Action.Builder(null, "Üben", open).build())
+                .setOnlyAlertOnce(true)
+                .setAutoCancel(true)
+                .build(),
+        )
     }
+
+    private const val NOTIFICATION_ID = 1
 
     private fun alarmIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
         context, 0, Intent(context, DueReceiver::class.java),

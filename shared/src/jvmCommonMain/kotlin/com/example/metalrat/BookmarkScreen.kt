@@ -69,6 +69,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/** Value for `requestedPractice` that only opens the practice tab (several videos due). */
+const val OPEN_PRACTICE_TAB = "*"
+
 /** What the UI needs from Android or the desktop. */
 interface Platform {
     /** Shown while there are no bookmarks yet: how to save one on this platform. */
@@ -113,7 +116,7 @@ fun BookmarkScreen(
     thumbs: ThumbnailCache,
     platform: Platform,
     header: @Composable () -> Unit = {},
-    /** Bookmark id to practice right away (tap on a "due" reminder). */
+    /** Bookmark id to practice right away (tap on a "due" reminder); [OPEN_PRACTICE_TAB] just opens the tab. */
     requestedPractice: String? = null,
     onPracticeRequestHandled: () -> Unit = {},
 ) {
@@ -130,7 +133,8 @@ fun BookmarkScreen(
     }
     LaunchedEffect(requestedPractice, items) {
         if (requestedPractice != null) {
-            store.get(requestedPractice)?.let { practicing = it; practiceTab = true }
+            practiceTab = true
+            store.get(requestedPractice)?.let { practicing = it }
             onPracticeRequestHandled()
         }
     }
@@ -217,6 +221,10 @@ fun BookmarkScreen(
                             onOpen = { Links.openUrl(b)?.let(platform::open) },
                             onPractice = { practicing = b },
                             onStopPractice = { store.update(b.id) { it.copy(practice = null) } },
+                            onResetPractice = {
+                                store.update(b.id) { it.copy(practice = it.practice?.let { p -> SpacedRepetition.reset(p, System.currentTimeMillis()) }) }
+                                scope.launch { snackbar.showSnackbar("Zurückgesetzt – wieder von vorn (45 min, 2 h, …)") }
+                            },
                             onEdit = { editing = b },
                             onCopy = { Links.openUrl(b)?.let(platform::copy) },
                             onDelete = {
@@ -276,6 +284,7 @@ private fun BookmarkCard(
     onOpen: () -> Unit,
     onPractice: () -> Unit,
     onStopPractice: () -> Unit,
+    onResetPractice: () -> Unit,
     onEdit: () -> Unit,
     onCopy: () -> Unit,
     onDelete: () -> Unit,
@@ -373,6 +382,7 @@ private fun BookmarkCard(
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(text = { Text("Bearbeiten") }, onClick = { menuOpen = false; onEdit() })
                         if (b.practice != null) {
+                            DropdownMenuItem(text = { Text("Wiederholung zurücksetzen") }, onClick = { menuOpen = false; onResetPractice() })
                             DropdownMenuItem(text = { Text("Nicht mehr üben") }, onClick = { menuOpen = false; onStopPractice() })
                         }
                         if (link != null) DropdownMenuItem(text = { Text("Link kopieren") }, onClick = { menuOpen = false; onCopy() })
