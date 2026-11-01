@@ -51,7 +51,9 @@ class MainActivity : ComponentActivity() {
     private var resumes by mutableIntStateOf(0)
     private var requestedPractice by mutableStateOf<String?>(null)
 
-    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        onNotificationResult()
+    }
 
     private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         val data = pendingExport
@@ -105,10 +107,6 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun practice(url: String?, title: String, minutes: Int): String? {
-            // Reminders need it; asked the first time something is practiced.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-            ) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             // Wassertiger's invisible PracticeActivity starts the timer service and then opens the video.
             val wassertiger = Intent(WASSERTIGER_PRACTICE).setPackage(WASSERTIGER)
                 .putExtra("seconds", minutes * 60)
@@ -150,6 +148,25 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         resumes++ // re-check permissions after coming back from the settings
+    }
+
+    private fun notificationsAllowed(): Boolean =
+        getSystemService(android.app.NotificationManager::class.java).areNotificationsEnabled()
+
+    private var onNotificationResult: () -> Unit = {}
+
+    /** Asks once; after a refusal Android doesn't ask again, so the app's notification settings open instead. */
+    private fun requestNotifications(onResult: () -> Unit) {
+        val asked = getSharedPreferences("metalrat", MODE_PRIVATE).getBoolean("asked_notifications", false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            (!asked || shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS))
+        ) {
+            getSharedPreferences("metalrat", MODE_PRIVATE).edit().putBoolean("asked_notifications", true).apply()
+            onNotificationResult = onResult
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            openSettings(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
+        }
     }
 
     private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
@@ -195,10 +212,11 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun SetupCard(refresh: Int) {
         val media = remember(refresh) { MediaSessions.hasAccess(this) }
+        var notify by remember(refresh) { mutableStateOf(notificationsAllowed()) }
         val reader = remember(refresh) { UrlReader.isEnabled(this) }
         var tile by remember(refresh) { mutableStateOf(Prefs.tileAdded(this)) }
         var hidden by remember { mutableStateOf(false) }
-        if (hidden || (media && reader && tile)) return
+        if (hidden || (media && reader && tile && notify)) return
 
         Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -235,6 +253,12 @@ class MainActivity : ComponentActivity() {
                         "dann merkt die Tastenkombi direkt.",
                     action = "Einschalten",
                 ) { openSettings(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+                SetupStep(
+                    done = notify,
+                    title = "Erinnerungen fürs Üben",
+                    text = "Benachrichtigungen erlauben: MetalRat meldet sich, wenn ein Video wieder dran ist (45 min, 2 h, 1 Tag …).",
+                    action = "Erlauben",
+                ) { requestNotifications { notify = notificationsAllowed() } }
                 if ((!media || !reader) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(

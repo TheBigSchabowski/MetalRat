@@ -6,6 +6,9 @@
     <!-- "Üben fällig" reminders, re-planned after a reboot. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Reminders on time (45 min after practice, not "sometime within the hour"). -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
 
     <!-- App names ("YouTube", "Chrome") of the apps a bookmark came from. -->
     <queries>

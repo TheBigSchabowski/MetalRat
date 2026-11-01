@@ -8,11 +8,12 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 
 /**
  * "Üben fällig" notifications. One alarm for the next due bookmark; when it fires, every bookmark
  * that became due since the last check gets a notification, then the next alarm is set.
- * Inexact on purpose (no exact-alarm permission): Android may deliver a few minutes late.
+ * Exact alarms via USE_EXACT_ALARM (fine for a private app outside the Play Store).
  */
 object Reminders {
     private const val CHANNEL = "due"
@@ -20,11 +21,19 @@ object Reminders {
 
     fun schedule(context: Context, items: List<Bookmark>) {
         val now = System.currentTimeMillis()
+        // Start of the "became due since" window for notifyDue: set once, before anything can be due.
+        val prefs = context.getSharedPreferences("reminders", Context.MODE_PRIVATE)
+        if (!prefs.contains("last_check")) prefs.edit().putLong("last_check", now).apply()
         val alarms = context.getSystemService(AlarmManager::class.java)
         val pending = alarmIntent(context)
         alarms.cancel(pending)
         val next = items.mapNotNull { it.practice?.due }.filter { it > now }.minOrNull() ?: return
-        alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next, pending)
+        // Exact: an inexact alarm may come half an hour late, too much for a 45 min interval.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()) {
+            alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next, pending)
+        } else {
+            alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next, pending)
+        }
     }
 
     /** Notifies bookmarks that became due since the last check (no backlog on the very first run). */
